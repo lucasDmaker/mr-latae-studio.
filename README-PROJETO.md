@@ -57,3 +57,7 @@ Arquivos:
 - `REVIEW.md`: resumo e roteiro de revisão.
 
 Para servir localmente, opcionalmente use `python3 -m http.server 8000` e abra `http://localhost:8000`. Não há instalação de dependências.
+
+## Vídeo com IA
+
+O aplicativo também inclui criação de MP4 vertical com imagens geradas, movimento, voz e legendas. Essa função requer um servidor separado. Veja o passo a passo completo para Android em [GUIA-VIDEO.md](GUIA-VIDEO.md). O código está em `video-service/`; `render.yaml` prepara implantação manual no Render. Não é necessário alterar o Worker de roteiros. Imagem e voz podem consumir créditos.

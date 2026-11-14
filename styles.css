@@ -5,3 +5,11 @@
 #generation-message{font-size:.85rem;line-height:1.5;color:#c2d3ec}
 #local-fallback{margin-bottom:12px;padding:12px;cursor:pointer}
 .primary:disabled{opacity:.65;cursor:wait}
+
+.video-studio{margin-top:28px;padding-top:20px;border-top:1px solid var(--line)}
+.video-studio p,.video-studio small{color:var(--muted);line-height:1.6}
+.video-studio input[type=url],.video-studio input[type=password]{display:block;width:100%;padding:12px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;margin:8px 0 12px}
+.video-studio label{display:block;margin-top:16px}.video-studio textarea{width:100%;box-sizing:border-box}
+.video-studio button{padding:14px;background:var(--blue);color:white;border:0;border-radius:8px;margin-top:12px;max-width:100%}
+.video-studio .video-consent{line-height:1.6;font-size:13px}.video-consent input{margin-right:8px}
+.video-studio button:disabled{opacity:.6;cursor:wait}#video-status{overflow-wrap:anywhere}

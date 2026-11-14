@@ -1,0 +1,18 @@
+# Só cria serviço se você solicitar no painel Render. Não ativa publicação por push.
+services:
+  - type: web
+    name: mr-latae-video
+    runtime: docker
+    plan: free
+    rootDir: video-service
+    autoDeployTrigger: 'off'
+    healthCheckPath: /health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: APP_ACCESS_TOKEN
+        sync: false
+      - key: IMAGE_MODEL
+        value: gemini-2.5-flash-image
+      - key: VOICE_MODEL
+        value: gemini-2.5-flash-preview-tts
