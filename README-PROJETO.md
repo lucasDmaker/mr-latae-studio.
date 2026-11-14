@@ -1,6 +1,6 @@
 # Mr. Latae Studio
 
-Aplicativo em português para preparar Instagram Reels e YouTube Shorts. HTML, CSS e JavaScript puro, sem instalação, frameworks, fontes externas, serviços pagos ou chamadas de IA. `index.html` está na raiz e os caminhos são relativos, compatíveis com GitHub Pages em subdiretórios.
+Aplicativo em português para preparar Instagram Reels e YouTube Shorts. HTML, CSS e JavaScript puro, sem instalação ou frameworks, com gerador local e integração Gemini opcional. Veja [GUIA-GEMINI.md](GUIA-GEMINI.md) para configurar o Worker e usar a IA. `index.html` está na raiz e os caminhos são relativos, compatíveis com GitHub Pages em subdiretórios.
 
 ## Como usar
 
@@ -27,19 +27,19 @@ Em `core.js`, edite `openings`, `middles`, `angles` e o objeto `content` da fun�
 
 ## Dados e limites
 
-O histórico usa a chave `mr-latae-studio-v1` do `localStorage` e mantém os 50 projetos mais recentes. Não há login, sincronização, rastreamento ou envio de dados. Limpar os dados do navegador, mudar de endereço/origem ou usar navegação privada pode remover ou separar o histórico. Exporte em TXT como cópia de segurança. Se o armazenamento estiver bloqueado ou cheio, um aviso orientará a exportação; o projeto atual continua editável durante a sessão. Exportações TXT são para consulta e não podem ser reimportadas nesta versão.
+O histórico usa a chave `mr-latae-studio-v1` do `localStorage` e mantém os 50 projetos mais recentes. Não há sincronização do histórico. No modo Gemini, o tema e as opções são enviados ao Worker e à Google; a senha segue somente no cabeçalho da solicitação e não é salva no histórico. No modo local, não há envio de dados. Limpar os dados do navegador, mudar de endereço/origem ou usar navegação privada pode remover ou separar o histórico. Exporte em TXT como cópia de segurança. Se o armazenamento estiver bloqueado ou cheio, um aviso orientará a exportação; o projeto atual continua editável durante a sessão. Exportações TXT são para consulta e não podem ser reimportadas nesta versão.
 
 ## Testes sem instalar pacotes
 
 Com Node.js 18 ou superior já disponível:
 
 ```sh
-node tests/core.test.js
+node --test tests/*.test.js
 node --check core.js
 node --check app.js
 ```
 
-São seis testes que cobrem as 24 combinações de opções, tempos das cenas, variações, validação de entradas, texto potencialmente malicioso tratado como texto, persistência de edições e checklist, histórico inválido, falha de armazenamento, limite de projetos e exportação.
+Os testes locais cobrem as 24 combinações de opções, tempos das cenas, variações, validação de entradas, texto potencialmente malicioso tratado como texto, persistência de edições e checklist, histórico inválido, falha de armazenamento, limite de projetos e exportação.
 
 Verificação manual no Android: gerar, editar, marcar tarefas, recarregar, reabrir o projeto, copiar, exportar e excluir. Confira ausência de rolagem horizontal e navegação por teclado em telas maiores. O aplicativo não precisa de Node.js para funcionar.
 
