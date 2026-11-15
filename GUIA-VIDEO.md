@@ -71,3 +71,9 @@ O serviço aceita somente a origem do seu GitHub Pages no navegador e exige senh
 - O fluxo de celular também foi verificado com Chromium e respostas simuladas: geração local/Gemini, campo de senha, seis cenas, autorização, download e ausência de rolagem horizontal. Teste opcional para quem tiver Playwright e Chromium instalados: `python3 tests/video-browser.py`.
 - Acesso real aos modelos e implantação na sua conta ainda precisam dos passos manuais acima. Não foi feito vídeo real usando sua chave.
 - Futuras mudanças no servidor exigem **Manual Deploy** no Render. Mudanças no Worker continuam sendo publicadas separadamente na Cloudflare.
+
+## Recuperar acompanhamento depois de perder a conexão
+
+Use **CONSULTAR VÍDEO EXISTENTE (SEM NOVA GERAÇÃO)**. Informe endereço e senha novamente se recarregou a página. A consulta faz somente GET, não chama Gemini e não gera outro vídeo. Com a senha compartilhada, ela recupera o último trabalho dessa instalação. Se o servidor reiniciou, o trabalho pode ter sido perdido.
+
+Para instalar esta correção, atualize o site pelo merge do PR e no Render use **Manual Deploy → Deploy latest commit** no serviço. Isso reinicia o servidor e perde os trabalhos e arquivos temporários anteriores; não faça durante um trabalho que deseja preservar. Não é necessário alterar o Worker. Os novos logs mostram apenas etapas e erros sanitizados, sem texto dos roteiros ou credenciais.

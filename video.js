@@ -14,16 +14,16 @@
       const response=await fetcher(base+path,{...options,headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(60000)});
       if(response.ok && path.endsWith('/download'))return response.blob();
       let data;try{data=await response.json();}catch{throw new Error('O servidor respondeu em formato inválido. Confira o endereço.');}
-      if(!response.ok)throw new Error(data.error || 'Servidor de vídeo indisponível.');
+      if(!response.ok){const error=new Error(data.error || 'Servidor de vídeo indisponível.');error.status=response.status;throw error;}
       return data;
     }catch(error){
-      if(error instanceof TypeError || error.name==='TimeoutError')throw new Error('Não foi possível conectar ao servidor. Confira o endereço e aguarde a inicialização. A geração não será reenviada automaticamente.');
+      if(error instanceof TypeError || error.name==='TimeoutError'){const failure=new Error('Conexão interrompida. Use CONSULTAR VÍDEO EXISTENTE para retomar sem gerar novamente.');failure.connection=true;throw failure;}
       throw error;
     }
   }
   if(typeof module!=='undefined' && module.exports){module.exports={scenesFrom,serverURL,api};return;}
   const $=id=>document.getElementById(id);
-  let project=null, active=null, busy=false, downloadURL=null;
+  let project=null, active=null, busy=false, uncertain=false, downloadURL=null;
   function message(text){$('video-status').textContent=text;}
   function open(p){
     project=p;
@@ -39,19 +39,38 @@
   async function poll(job){
     const started=Date.now();
     while(Date.now()-started<25*60*1000){
-      const data=await api(job.base,`/jobs/${job.id}`,job.token);
+      let data;
+      for(let attempt=0;attempt<3;attempt++){
+        try{data=await api(job.base,`/jobs/${job.id}`,job.token);break;}
+        catch(error){if(!error.connection || attempt===2)throw error;message('Reconectando ao pedido existente, sem gerar novamente…');await new Promise(resolve=>setTimeout(resolve,5000));}
+      }
       message(`${job.theme}: ${data.message}`);
-      if(data.status==='error')throw new Error(data.message);
+      if(data.status==='error'){uncertain=false;throw new Error(data.message);}
       if(data.status==='done'){
-        active=job;$('download-video').hidden=false;return;
+        uncertain=false;active=job;$('download-video').hidden=false;return;
       }
       await new Promise(resolve=>setTimeout(resolve,5000));
     }
     throw new Error('O acompanhamento excedeu 25 minutos. O servidor pode continuar trabalhando. Não envie outra geração antes de conferir o serviço.');
   }
   document.addEventListener('DOMContentLoaded',()=>{
+    $('resume-video').addEventListener('click',async()=>{
+      if(busy)return;
+      busy=true;$('resume-video').disabled=true;$('create-video').disabled=true;
+      try{
+        const base=serverURL($('video-server').value),token=$('video-password').value;
+        if(!token)throw new Error('Informe a senha do servidor para consultar o vídeo existente.');
+        message('Consultando o último pedido. Nenhuma geração será iniciada…');
+        const data=active?.id && active.base===base ? {job:active} : await api(base,'/jobs/latest',token);
+        if(!data.job){uncertain=false;active=null;message('Nenhum pedido disponível. O servidor pode ter reiniciado ou o vídeo expirou.');return;}
+        if(!/^[a-f0-9]{32}$/.test(data.job.id))throw new Error('Resposta de consulta inválida. Atualize o servidor de vídeo.');
+        active={base,token,id:data.job.id,theme:'Vídeo existente'};uncertain=true;
+        await poll(active);
+      }catch(error){message(error.message);}
+      finally{busy=false;$('resume-video').disabled=false;$('create-video').disabled=uncertain;}
+    });
     $('create-video').addEventListener('click',async()=>{
-      if(busy || !project)return;
+      if(busy || !project || uncertain)return;
       try{
         const base=serverURL($('video-server').value), token=$('video-password').value;
         if(!token)throw new Error('Informe a senha do servidor de vídeo.');
@@ -64,11 +83,13 @@
         if(downloadURL){URL.revokeObjectURL(downloadURL);downloadURL=null;}
         const snapshot={theme:project.theme,script,scenes,duration:project.duration};
         message('Enviando pedido. Mantenha esta página aberta até baixar o MP4…');
+        uncertain=true;active=null;
         const data=await api(base,'/jobs',token,{method:'POST',body:JSON.stringify(snapshot)});
         if(!/^[a-f0-9]{32}$/.test(data.id))throw new Error('O servidor não retornou o identificador do vídeo.');
-        await poll({base,token,id:data.id,theme:snapshot.theme});
-      }catch(error){message(error.message);}
-      finally{busy=false;$('create-video').disabled=false;}
+        active={base,token,id:data.id,theme:snapshot.theme};
+        await poll(active);
+      }catch(error){if(error.status && error.status!==409 && error.status<500)uncertain=false;message(error.message);}
+      finally{busy=false;$('create-video').disabled=uncertain;}
     });
     $('download-video').addEventListener('click',async()=>{
       if(!active)return;

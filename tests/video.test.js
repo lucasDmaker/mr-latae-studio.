@@ -14,5 +14,5 @@ test('cliente inicia trabalho e baixa MP4 sem senha em URL ou corpo',async()=>{
  assert.equal(options.headers.Authorization,'Bearer test-password');assert.ok(!url.includes('test-password'));assert.equal(options.body,'{}');return new Response('{"id":"job"}',{status:202});});assert.equal(result.id,'job');
  const blob=await V.api('https://studio.test','/jobs/job/download','test-password',{},async()=>new Response('mock-mp4',{headers:{'Content-Type':'video/mp4'}}));assert.equal(await blob.text(),'mock-mp4');
  await assert.rejects(()=>V.api('https://studio.test','/jobs','x',{},async()=>new Response('{"error":"Senha incorreta"}',{status:401})),/Senha/);
- await assert.rejects(()=>V.api('https://studio.test','/jobs','x',{},async()=>{throw new TypeError('network');}),/não será reenviada/);
+ await assert.rejects(()=>V.api('https://studio.test','/jobs','x',{},async()=>{throw new TypeError('network');}),/CONSULTAR VÍDEO/);
 });

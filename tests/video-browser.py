@@ -26,13 +26,17 @@ with sync_playwright() as p:
  page.locator('#video-server').fill('https://mock-video.onrender.com')
  page.locator('#video-password').fill('test-access')
  requests=[]
+ state={'interrupted':False,'posts':0}
  def mock(route):
   requests.append(route.request.url)
   assert route.request.headers['authorization']=='Bearer test-access'
   if route.request.method=='POST':
+   state['posts']+=1
    data=route.request.post_data_json;assert len(data['scenes'])==6;assert data['script']==content['script']
    route.fulfill(status=202,json={'id':'a'*32})
   elif route.request.url.endswith('/download'):route.fulfill(status=200,content_type='video/mp4',body=b'test-mp4')
+  elif not state['interrupted']:
+   state['interrupted']=True;route.fulfill(status=503,json={'error':'Interrupção simulada'})
   else:route.fulfill(status=200,json={'status':'done','message':'MP4 pronto para baixar.'})
  page.route('https://mock-video.onrender.com/**',mock)
  page.locator('#create-video').click()
@@ -40,7 +44,11 @@ with sync_playwright() as p:
  assert len(requests)==0
  page.locator('#video-consent').check()
  page.locator('#create-video').click()
+ page.wait_for_function("document.querySelector('#video-status').textContent==='Interrupção simulada'")
+ assert page.locator('#create-video').is_disabled()
+ page.locator('#resume-video').click()
  page.locator('#download-video').wait_for(state='visible')
+ assert state['posts']==1
  with page.expect_download() as download:page.locator('#download-video').click()
  assert download.value.suggested_filename=='mr-latae-video.mp4'
  storage=page.evaluate('JSON.stringify(localStorage)')

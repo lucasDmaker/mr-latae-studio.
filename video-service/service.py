@@ -188,26 +188,32 @@ def cleanup():
             del JOBS[job_id]
 
 
+def progress(job_id, status, message):
+    JOBS[job_id].update(status=status, message=message)
+    # Somente etapa/erro sanitizado: nunca tema, texto, senha ou resposta bruta da API.
+    print(f'Video {job_id[:8]}: {status}: {message}', flush=True)
+
+
 def process(job_id, data):
     directory = DATA / job_id
     try:
         directory.mkdir(parents=True)
-        JOBS[job_id].update(status='running', message='Gerando narração…')
+        progress(job_id, 'running', 'Gerando narração…')
         create_voice(data['script'], directory / 'voice.wav')
         with wave.open(str(directory / 'voice.wav'), 'rb') as voice:
             ratio = voice.getnframes() / voice.getframerate() / data['duration']
         if not .5 <= ratio <= 2:
             raise VideoError('A voz ficou longa ou curta demais. Ajuste a narração. Nenhuma imagem foi solicitada.')
         for i, scene in enumerate(data['scenes']):
-            JOBS[job_id]['message'] = f'Criando imagem {i+1} de 6…'
+            progress(job_id, 'running', f'Criando imagem {i+1} de 6…')
             create_image(data['theme'] + '\n' + scene, directory / f'image-{i}.png')
-        JOBS[job_id]['message'] = 'Montando vídeo e legendas…'
+        progress(job_id, 'running', 'Montando vídeo e legendas…')
         # FFmpeg usa caminhos relativos dentro do diretório privado do trabalho.
         # Há no máximo um trabalho ativo: cwd do processo não é alterado.
         assemble_in_directory(data, directory)
-        JOBS[job_id].update(status='done', message='MP4 pronto para baixar. Disponível por uma hora.')
+        progress(job_id, 'done', 'MP4 pronto para baixar. Disponível por uma hora.')
     except Exception as error:
-        JOBS[job_id].update(status='error', message=str(error) if isinstance(error, VideoError) else 'Falha no processamento do vídeo. Confira a configuração do serviço.')
+        progress(job_id, 'error', str(error) if isinstance(error, VideoError) else 'Falha no processamento do vídeo. Confira a configuração do serviço.')
     finally:
         for path in directory.glob('*'):
             if path.name != 'video.mp4':
@@ -313,6 +319,15 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(200 if ready else 503, {'ready': ready}); return
         if not self.gate():
             return
+        if self.path == '/jobs/latest':
+            with LOCK:
+                cleanup()
+                if not JOBS:
+                    self.reply(200, {'job': None}); return
+                job_id = max(JOBS, key=lambda key: JOBS[key]['created'])
+                snapshot = JOBS[job_id]
+                result = {'id': job_id, 'status': snapshot['status'], 'message': snapshot['message']}
+            self.reply(200, {'job': result}); return
         match = re.fullmatch(r'/jobs/([a-f0-9]{32})(/download)?', self.path)
         if not match:
             self.reply(404, {'error': 'Endereço não encontrado.'}); return

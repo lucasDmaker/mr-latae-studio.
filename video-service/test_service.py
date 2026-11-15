@@ -50,10 +50,16 @@ class ServiceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp,patch.object(s,'DATA',Path(tmp)),patch.dict(os.environ,{'GEMINI_API_KEY':'fake','APP_ACCESS_TOKEN':'test-password'}),patch.object(s,'process'):
             s.JOBS.clear()
             self.assertEqual(req(token='wrong').code,401)
+            self.assertEqual(req('/jobs/latest',data=None,token='wrong').code,401)
+            self.assertIsNone(json.load(req('/jobs/latest',data=None))['job'])
             denied=req(origin='https://evil.test');self.assertEqual(denied.code,403);self.assertIsNone(denied.headers.get('Access-Control-Allow-Origin'))
             self.assertEqual(req(data={**BRIEF,'duration':12}).code,400)
             response=req();self.assertEqual(response.code,202);job_id=json.load(response)['id']
             self.assertEqual(req().code,409)
+            latest=json.load(req('/jobs/latest',data=None))['job']
+            self.assertEqual(latest['id'],job_id)
+            self.assertEqual(latest['status'],'queued')
+            self.assertNotIn('script',latest)
             response=req('/jobs/'+job_id,data=None);self.assertEqual(json.load(response)['status'],'queued')
             s.JOBS[job_id]['status']='done'
             folder=Path(tmp)/job_id;folder.mkdir();(folder/'video.mp4').write_bytes(b'fake-mp4')
